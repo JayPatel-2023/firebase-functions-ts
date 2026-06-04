@@ -1,11 +1,17 @@
 import {onRequest} from "firebase-functions/v2/https";
+import {initializeApp} from "firebase-admin/app";
+import {getFirestore, FieldValue} from "firebase-admin/firestore";
+
+initializeApp();
+
+const db = getFirestore();
 
 export const helloWorld = onRequest((request, response) => {
   const name = request.query.name || "Guest";
   response.send(`Hello ${name}!`);
 });
 
-export const createOrder = onRequest((request, response) => {
+export const createOrder = onReqinuest(async (request, response) => {
   try {
     const customerName = request.body.customerName;
     const item = request.body.item;
@@ -26,13 +32,19 @@ export const createOrder = onRequest((request, response) => {
       return;
     }
 
+    const orderRef = await db.collection("orders").add({
+      customerName,
+      item,
+      status: "Pending",
+      createdAt: FieldValue.serverTimestamp(),
+    });
+
+    console.log(orderRef.id);
+
     response.status(200).json({
       success: true,
       message: "Order created successfully",
-      order: {
-        customerName,
-        item,
-      },
+      orderId: orderRef.id,
     });
   } catch (error) {
     console.error(error);
